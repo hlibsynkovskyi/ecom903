@@ -8,7 +8,7 @@
 	{% for image in product.images %}
 		<img src="{{ vich_uploader_asset(image, 'image') | imagine_filter('product_detail') }}"
 			 alt="{{product.name}}">
-	{% endif %}
+	{% endfor %}
 
 	<p>{{ product.price / 100 }}</p>
 	<p>{{ product.description }}</p>
