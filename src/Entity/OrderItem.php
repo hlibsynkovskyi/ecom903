@@ -70,6 +70,11 @@ class OrderItem
     {
         $this->product = $product;
 
+        if ($product) {
+            $this->name = $product->getName();
+            $this->price = $product->getPrice();
+        }
+
         return $this;
     }
 
@@ -106,6 +111,16 @@ class OrderItem
     {
         $this->count = $count;
 
+        if ($this->cart) {
+            $this->cart->updateAmount();
+        }
+
         return $this;
     }
+
+    public function getAmount(): int
+    {
+        return $this->getPrice() * $this->getCount();
+    }
+
 }

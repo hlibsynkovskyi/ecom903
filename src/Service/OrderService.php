@@ -3,9 +3,11 @@
 namespace App\Service;
 
 use App\Entity\Order;
+use App\Entity\OrderItem;
+use App\Entity\Product;
 use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 class OrderService
 {
@@ -18,7 +20,7 @@ class OrderService
     private $entityManager;
 
     /**
-     * @var Session
+     * @var SessionInterface
      */
     private $sessions;
 
@@ -29,7 +31,7 @@ class OrderService
 
     public function __construct(
         EntityManagerInterface $entityManager,
-        Session $sessions,
+        SessionInterface $sessions,
         OrderRepository $orderRepo
     ) {
         $this->entityManager = $entityManager;
@@ -51,6 +53,41 @@ class OrderService
         }
 
         return $order;
+    }
+
+    public function add(Product $product, int $count): Order
+    {
+        $order = $this->getOrder();
+        $existingItem = null;
+
+        foreach ($order->getItems() as $item) {
+            if ($item->getProduct() === $product) {
+                $existingItem = $item;
+                break;
+            }
+        }
+
+        if ($existingItem) {
+            $newCount = $existingItem->getCount() + $count;
+            $existingItem->setCount($newCount);
+        } else {
+            $existingItem = new OrderItem();
+            $existingItem->setProduct($product);
+            $existingItem->setCount($count);
+            $order->addItem($existingItem);
+        }
+
+        $this->save($order);
+
+        return $order;
+    }
+
+    public function save(Order $order)
+    {
+        $this->entityManager->persist($order);
+        $this->entityManager->flush();
+
+        $this->sessions->set(self::SESSION_KEY, $order->getId());
     }
 
 }
