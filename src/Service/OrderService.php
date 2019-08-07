@@ -5,9 +5,15 @@ namespace App\Service;
 use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Entity\Product;
+use App\Entity\User;
 use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mime\NamedAddress;
 
 class OrderService
 {
@@ -29,14 +35,28 @@ class OrderService
      */
     private $orderRepo;
 
+    /**
+     * @var MailerInterface
+     */
+    private $mailer;
+
+    /**
+     * @var ParameterBagInterface
+     */
+    private $parameters;
+
     public function __construct(
         EntityManagerInterface $entityManager,
         SessionInterface $sessions,
-        OrderRepository $orderRepo
+        OrderRepository $orderRepo,
+        MailerInterface $mailer,
+        ParameterBagInterface $parameters
     ) {
         $this->entityManager = $entityManager;
         $this->sessions = $sessions;
         $this->orderRepo = $orderRepo;
+        $this->mailer = $mailer;
+        $this->parameters = $parameters;
     }
 
     public function getOrder(): Order
@@ -55,7 +75,7 @@ class OrderService
         return $order;
     }
 
-    public function add(Product $product, int $count): Order
+    public function add(Product $product, int $count, ?User $user): Order
     {
         $order = $this->getOrder();
         $existingItem = null;
@@ -77,13 +97,17 @@ class OrderService
             $order->addItem($existingItem);
         }
 
-        $this->save($order);
+        $this->save($order, $user);
 
         return $order;
     }
 
-    public function save(Order $order)
+    public function save(Order $order, ?User $user = null)
     {
+        if ($user) {
+            $order->setUser($user);
+        }
+
         $this->entityManager->persist($order);
         $this->entityManager->flush();
 
@@ -96,6 +120,25 @@ class OrderService
         $order->removeItem($item);
         $this->entityManager->remove($item);
         $this->save($order);
+    }
+
+    public function makeOrder(Order $order)
+    {
+        $order->setOrderedAt(new \DateTime());
+        $this->save($order);
+        $this->sessions->remove(self::SESSION_KEY);
+        $this->sendAdminOrderMessage($order);
+    }
+
+    private function sendAdminOrderMessage(Order $order)
+    {
+        $message = new TemplatedEmail();
+        $message->to(new Address($this->parameters->get('orderAdminEmail')));
+        $message->from('noreply@shop.com');
+        $message->subject('Новый заказ на сайте');
+        $message->htmlTemplate('order/emails/admin.html.twig');
+        $message->context(['order' => $order]);
+        $this->mailer->send($message);
     }
 
 }

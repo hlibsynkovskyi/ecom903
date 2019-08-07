@@ -53,7 +53,7 @@ class Order
     private $lastName;
 
     /**
-     * @ORM\Column(type="string", length=180)
+     * @ORM\Column(type="string", length=180, nullable=true)
      * @Assert\NotBlank()
      * @Assert\Email(checkHost=true, checkMX=true)
      */
@@ -61,6 +61,7 @@ class Order
 
     /**
      * @ORM\Column(type="string", length=1000, nullable=true)
+     * @Assert\NotBlank()
      */
     private $address;
 
@@ -220,6 +221,10 @@ class Order
     public function setUser(?User $user): self
     {
         $this->user = $user;
+        $this->firstName = $user->getFirstName();
+        $this->lastName = $user->getLastName();
+        $this->email = $user->getEmail();
+        $this->address = $user->getAddress();
 
         return $this;
     }
