@@ -53,6 +53,17 @@ class ProductAdmin extends AbstractAdmin
                     'edit' => 'inline',
                     'inline' => 'table',
                 ]
+            )
+            ->add(
+                'attributeValues',
+                CollectionType::class,
+                [
+                    'by_reference' => false,
+                ],
+                [
+                    'edit' => 'inline',
+                    'inline' => 'table',
+                ]
             );
         ;
     }
