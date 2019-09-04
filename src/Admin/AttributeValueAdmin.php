@@ -30,10 +30,15 @@ class AttributeValueAdmin extends AbstractAdmin
                         $product = $attributeValue->getProduct();
 
                         if ( $product ) {
-                            $category = $attributeValue->getProduct()->getCategory();
+                            $categories = $attributeValue->getProduct()->getCategories();
+                            $categoriesIds = [];
 
-                            if ( $category ) {
-                                $queryBuilder->where('a.category = :category')->setParameter('category', $category);
+                            foreach ($categories as $category) {
+                                $categoriesIds = $category->getId();
+                            }
+
+                            if ( $categories ) {
+                                $queryBuilder->where($queryBuilder->expr()->in('a.category', $categoriesIds));
                             }
                         }
                     }
